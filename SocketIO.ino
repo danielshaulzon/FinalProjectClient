@@ -32,6 +32,9 @@ WebSocketsClient webSocket;
 // Create a new change detector for the button
 ChangeDetector<bool> btnChangeDetector(false);
 
+// The current state of the LED
+ChangeDetector<bool> ledState = LOW;
+
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 	switch (type) {
 		case WStype_DISCONNECTED: {
@@ -43,10 +46,16 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 			break;
 		}
 		case WStype_TEXT: {
+			bool ledChanged;
 			if (String((char *)payload) == "led on") {
-				digitalWrite(LED_PIN, HIGH);
+				ledChanged = ledState.changed(HIGH);
 			} else if (String((char *)payload) == "led off") {
-				digitalWrite(LED_PIN, LOW);
+				ledChanged = ledState.changed(LOW);
+			}
+			if (ledChanged) {
+				bool newStatus = ledState.getValue();
+				digitalWrite(LED_PIN, newStatus);
+				webSocket.sendTXT(newStatus ? "LED on" : "LED off");
 			}
 			break;
 		}
