@@ -3,7 +3,7 @@
 
 #define WIFI_SSID ""
 #define WIFI_PASS ""
-#define HOST_IP ""
-#define HOST_PORT 3000
+#define HOST_IP "http://project-ariel-uni.herokuapp.com"
+#define HOST_PORT 80
 
 #endif
