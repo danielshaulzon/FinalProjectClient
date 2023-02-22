@@ -43,6 +43,11 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 		}
 		case WStype_CONNECTED: {
 			Serial.printf("[WSc] Connected to url: %s\n", payload);
+			if (ledState.getValue()) {
+				webSocket.sendTXT("LED on");
+			} else {
+				webSocket.sendTXT("LED off");
+			}
 			break;
 		}
 		case WStype_TEXT: {
@@ -65,6 +70,7 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 void setup() {
 	pinMode(LED_PIN, OUTPUT);
 	pinMode(BTN_PIN, INPUT_PULLUP);
+	digitalWrite(LED_PIN, LOW);
 
 	Serial.begin(115200);
 	if (!Serial) {
