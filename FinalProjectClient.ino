@@ -20,20 +20,32 @@
 // Include the ChangeDetector library
 #include "ChangeDetector.h"
 
-// Define the LED pin
-#define LED_PIN D5
+// Define the red LED pin
+#define RED_LED_PIN D5
 
-// Define the button pin
-#define BTN_PIN D6
+// Define the button pin for the red LED
+#define RED_BTN_PIN D6
+
+// Define the green LED pin
+#define GREEN_LED_PIN D7
+
+// Define the button pin for the green LED
+#define GREEN_BTN_PIN D3
 
 // Create a new WebSocket client
 WebSocketsClient webSocket;
 
-// Create a new change detector for the button
-ChangeDetector<bool> btnChangeDetector(false);
+// Create a new change detector for the red LED button
+ChangeDetector<bool> redBtnChangeDetector(false);
 
-// The current state of the LED
-ChangeDetector<bool> ledState = LOW;
+// Create a new change detector for the green LED button
+ChangeDetector<bool> greenBtnChangeDetector(false);
+
+// The current state of the red LED
+ChangeDetector<bool> redLedState = LOW;
+
+// The current state of the green LED
+ChangeDetector<bool> greenLedState = LOW;
 
 void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 	switch (type) {
@@ -43,24 +55,52 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 		}
 		case WStype_CONNECTED: {
 			Serial.printf("[WSc] Connected to url: %s\n", payload);
-			if (ledState.getValue()) {
-				webSocket.sendTXT("LED on");
+			if (redLedState.getValue()) {
+				webSocket.sendTXT("red led turned on");
 			} else {
-				webSocket.sendTXT("LED off");
+				webSocket.sendTXT("red led turned off");
+			}
+			if (greenLedState.getValue()) {
+				webSocket.sendTXT("green led turned on");
+			} else {
+				webSocket.sendTXT("green led turned off");
 			}
 			break;
 		}
 		case WStype_TEXT: {
-			bool ledChanged;
-			if (String((char *)payload) == "led on") {
-				ledChanged = ledState.changed(HIGH);
-			} else if (String((char *)payload) == "led off") {
-				ledChanged = ledState.changed(LOW);
+			bool redLedChanged, greenLedChanged;
+			String message = (char *)payload;
+			if (message == "red led on") {
+				redLedChanged = redLedState.changed(HIGH);
+			} else if (message == "red led off") {
+				redLedChanged = redLedState.changed(LOW);
+			} else if (message == "green led on") {
+				greenLedChanged = greenLedState.changed(HIGH);
+			} else if (message == "green led off") {
+				greenLedChanged = greenLedState.changed(LOW);
+			} else if (message == "red led toggle") {
+				redLedChanged = redLedState.changed(!redLedState.getValue());
+			} else if (message == "green led toggle") {
+				greenLedChanged = greenLedState.changed(!greenLedState.getValue());
 			}
-			if (ledChanged) {
-				bool newStatus = ledState.getValue();
-				digitalWrite(LED_PIN, newStatus);
-				webSocket.sendTXT(newStatus ? "LED on" : "LED off");
+
+			if (redLedChanged) {
+				bool newStatus = redLedState.getValue();
+				digitalWrite(RED_LED_PIN, newStatus);
+				if (newStatus) {
+					webSocket.sendTXT("red led turned on");
+				} else {
+					webSocket.sendTXT("red led turned off");
+				}
+			}
+			if (greenLedChanged) {
+				bool newStatus = greenLedState.getValue();
+				digitalWrite(GREEN_LED_PIN, newStatus);
+				if (newStatus) {
+					webSocket.sendTXT("green led turned on");
+				} else {
+					webSocket.sendTXT("green led turned off");
+				}
 			}
 			break;
 		}
@@ -68,9 +108,13 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 }
 
 void setup() {
-	pinMode(LED_PIN, OUTPUT);
-	pinMode(BTN_PIN, INPUT_PULLUP);
-	digitalWrite(LED_PIN, LOW);
+	pinMode(RED_LED_PIN, OUTPUT);
+	pinMode(RED_BTN_PIN, INPUT_PULLUP);
+	pinMode(GREEN_LED_PIN, OUTPUT);
+	pinMode(GREEN_BTN_PIN, INPUT_PULLUP);
+
+	digitalWrite(RED_LED_PIN, LOW);
+	digitalWrite(GREEN_LED_PIN, LOW);
 
 	Serial.begin(115200);
 	if (!Serial) {
@@ -95,13 +139,17 @@ void setup() {
 void loop() {
 	webSocket.loop();
 
-	bool btnPushed = digitalRead(BTN_PIN) == LOW;
-	if (btnChangeDetector.changed(btnPushed)) {
-		if (btnChangeDetector.getValue() == true) {
-			webSocket.sendTXT("button pressed");
-		} else {
-			webSocket.sendTXT("button released");
+	bool redBtnPushed = digitalRead(RED_BTN_PIN) == LOW;
+	if (redBtnChangeDetector.changed(redBtnPushed)) {
+		if (redBtnChangeDetector.getValue() == true) {
+			webSocket.sendTXT("red button pressed");
+		}
+	}
+
+	bool greenBtnPushed = digitalRead(GREEN_BTN_PIN) == LOW;
+	if (greenBtnChangeDetector.changed(greenBtnPushed)) {
+		if (greenBtnChangeDetector.getValue() == true) {
+			webSocket.sendTXT("green button pressed");
 		}
 	}
 }
-
